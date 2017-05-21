@@ -54,14 +54,23 @@ public class GenFactory {
                 throw new RuntimeException("Primitive array types not yet supported");
             }
 
-            return new ArrayGen(clazz, genForType(componentType));
+            return new ArrayGen<>(clazz, genForType(componentType));
         } else if (annotatedType instanceof AnnotatedParameterizedType) {
             AnnotatedParameterizedType pt = (AnnotatedParameterizedType) annotatedType;
             if (pt.getType() instanceof ParameterizedType) {
                 ParameterizedType t = (ParameterizedType) pt.getType();
-                if (t.getRawType().equals(List.class)) {
+                if (t.getRawType().equals(List.class)
+                        || t.getRawType().equals(Collection.class)
+                        || t.getRawType().equals(Iterable.class)) {
                     AnnotatedType componentType = pt.getAnnotatedActualTypeArguments()[0];
-                    return new ListGen(genForType(componentType));
+                    return new ListGen<>(genForType(componentType));
+                } else if (t.getRawType().equals(Set.class)) {
+                    AnnotatedType componentType = pt.getAnnotatedActualTypeArguments()[0];
+                    return new SetGen<>(genForType(componentType));
+                } else if (t.getRawType().equals(Map.class)) {
+                    AnnotatedType keyType = pt.getAnnotatedActualTypeArguments()[0];
+                    AnnotatedType valueType = pt.getAnnotatedActualTypeArguments()[1];
+                    return new MapGen<>(genForType(keyType), genForType(valueType));
                 }
             }
         }

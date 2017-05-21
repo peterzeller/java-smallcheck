@@ -8,7 +8,11 @@ import org.junit.runner.RunWith;
 import smallcheck.annotations.Property;
 import smallcheck.SmallCheckRunner;
 
+import java.util.Collection;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.StreamSupport;
 
 import static org.junit.Assert.*;
 
@@ -47,6 +51,36 @@ public class StandardTypes {
     }
 
     @Property
+    public void testCollection(Collection<Integer> ints) {
+        assertTrue(ints.stream().mapToInt(i -> i).sum() <= 6);
+    }
+
+    @Property
+    public void testIterable(Iterable<Integer> ints) {
+        int sum = 0;
+        for (Integer i : ints) {
+            sum += i;
+        }
+        assertTrue(sum <= 6);
+    }
+
+    @Property(maxInvocations = Integer.MAX_VALUE, maxDepth = 10)
+    public void testSet(Set<Integer> ints) {
+        int sum = 0;
+        for (Integer i : ints) {
+            sum += i;
+        }
+        assertTrue(sum <= 6);
+    }
+
+    @Property(maxInvocations = Integer.MAX_VALUE, maxDepth = 10)
+    public void testMap(Map<Character, Integer> m) {
+        Assume.assumeTrue(m.containsKey('a'));
+        Assume.assumeTrue(m.containsKey('b'));
+        assertTrue(m.get('a') != 2 || m.get('b') != 3);
+    }
+
+    @Property
     public void testAssume(List<String> x, List<String> y) {
         Assume.assumeTrue(x.contains("b"));
         Assume.assumeTrue(y.contains("b"));
@@ -59,4 +93,5 @@ public class StandardTypes {
         Assume.assumeTrue(x.size() > 4);
         assertEquals(1, 2);
     }
+
 }
