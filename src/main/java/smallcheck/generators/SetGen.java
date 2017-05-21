@@ -1,6 +1,8 @@
 package smallcheck.generators;
 
-import java.util.*;
+import java.util.Collections;
+import java.util.LinkedHashSet;
+import java.util.Set;
 import java.util.stream.Stream;
 
 /**
@@ -23,7 +25,7 @@ public class SetGen<T> extends SeriesGen<Set<T>> {
             return Stream.concat(
                     Stream.of(l),
                     elementGen.generate(depth - 1).map(e -> {
-                        Set<T> res = new HashSet<>(depth);
+                        Set<T> res = new LinkedHashSet<>(depth);
                         res.add(e);
                         res.addAll(l);
                         return res;

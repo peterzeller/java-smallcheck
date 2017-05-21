@@ -1,5 +1,5 @@
 group 'com.github.peterzeller'
-version '0.0.1'
+version '0.0.2'
 
 // Apply the java-library plugin to add support for Java Library
 apply plugin: 'java-library'

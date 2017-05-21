@@ -94,4 +94,14 @@ public class StandardTypes {
         assertEquals(1, 2);
     }
 
+    enum X {
+        A, B, C
+    }
+
+    @Property
+    public void testEnum(Set<X> s) {
+        assertTrue(s.size() < 3);
+    }
+
+
 }

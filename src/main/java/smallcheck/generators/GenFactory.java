@@ -92,6 +92,11 @@ public class GenFactory {
                 typeGenerators.put(clazz, gen);
                 return gen;
             }
+
+            if (Enum.class.isAssignableFrom(clazz)) {
+                // we have an enum:
+                return new EnumGen(clazz);
+            }
         }
 
 
