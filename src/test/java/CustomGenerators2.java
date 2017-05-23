@@ -4,46 +4,40 @@
 
 import org.junit.runner.RunWith;
 import smallcheck.SmallCheckRunner;
-import smallcheck.annotations.StaticFactory;
 import smallcheck.annotations.From;
 import smallcheck.annotations.Property;
+import smallcheck.annotations.StaticFactory;
 import smallcheck.generators.LongGen;
 import smallcheck.generators.SeriesGen;
 
 import java.math.BigInteger;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.IntStream;
+import java.util.function.Function;
 import java.util.stream.Stream;
 
 import static org.junit.Assert.assertTrue;
 
 
 @RunWith(SmallCheckRunner.class)
-public class CustomGenerators {
-
-
-    public static class BigIntegerGen extends SeriesGen<BigInteger> {
-        @Override
-        public Stream<BigInteger> generate(int depth) {
-            return new LongGen().generate(depth).map(BigInteger::valueOf);
-        }
-    }
-
-    @Property(maxDepth = 20)
-    public void test(@From(BigIntegerGen.class) BigInteger i) {
-        assertTrue(i.intValue() < 10);
-    }
+public class CustomGenerators2 {
 
 
     @Property(maxInvocations = 5000000)
-    @StaticFactory(ExprFactory.class)
+    @StaticFactory(value = ExprFactory.class, copyFunc = ExprCopy.class)
     public void testExpr(Expr e) {
         assertTrue(e.evaluate() < 8);
     }
 
+    public static class ExprCopy implements Function<Object, Object> {
+
+        @Override
+        public Object apply(Object o) {
+            return ((Expr) o).copy();
+        }
+    }
+
 
     public static class ExprFactory {
-        public static Number number(@From(CustomNumberGen.class) int i) {
+        public static Number number(int i) {
             return new Number(i);
         }
 
@@ -58,7 +52,18 @@ public class CustomGenerators {
 
 
     public static abstract class Expr {
+        Expr parent = null;
+
+        public void setParent(Expr parent) {
+            if (this.parent != null) {
+                throw new RuntimeException("parent already set");
+            }
+            this.parent = parent;
+        }
+
         abstract int evaluate();
+
+        public abstract Expr copy();
     }
 
     public static class Number extends Expr {
@@ -74,9 +79,16 @@ public class CustomGenerators {
         }
 
         @Override
+        public Number copy() {
+            return new Number(number);
+        }
+
+        @Override
         public String toString() {
             return "" + number;
         }
+
+
     }
 
     public static class Plus extends Expr {
@@ -86,11 +98,18 @@ public class CustomGenerators {
         public Plus(Expr left, Expr right) {
             this.left = left;
             this.right = right;
+            left.setParent(this);
+            right.setParent(this);
         }
 
         @Override
         int evaluate() {
             return left.evaluate() + right.evaluate();
+        }
+
+        @Override
+        public Plus copy() {
+            return new Plus(left.copy(), right.copy());
         }
 
         @Override
@@ -106,6 +125,8 @@ public class CustomGenerators {
         public Mult(Expr left, Expr right) {
             this.left = left;
             this.right = right;
+            left.setParent(this);
+            right.setParent(this);
         }
 
         @Override
@@ -117,13 +138,14 @@ public class CustomGenerators {
         public String toString() {
             return "(" + left + " * " + right + ")";
         }
-    }
 
-
-    public static class CustomNumberGen extends SeriesGen<Integer> {
         @Override
-        public Stream<Integer> generate(int depth) {
-            return IntStream.range(0, 2+depth).map(i -> 2*i).boxed();
+        public Mult copy() {
+            return new Mult(left.copy(), right.copy());
         }
     }
+
+
+
+
 }

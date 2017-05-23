@@ -7,6 +7,7 @@ import java.util.stream.Stream;
  */
 public class TupleGenerator extends SeriesGen<Object[]> {
 
+    // TODO add copy
 
     private SeriesGen<?>[] gens;
 

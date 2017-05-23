@@ -5,6 +5,7 @@ import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.function.Function;
 import java.util.stream.Stream;
 
 /**
@@ -13,11 +14,13 @@ import java.util.stream.Stream;
 public class StaticFactoryMethodsGenerator extends SeriesGen<Object> {
     private final GenFactory genFactory;
     private final List<Method> staticFactoryMethods;
+    private final Function<Object, Object> copyFunc;
 
-    public StaticFactoryMethodsGenerator(GenFactory genFactory, List<Method> staticFactoryMethods) {
+    public StaticFactoryMethodsGenerator(GenFactory genFactory, List<Method> staticFactoryMethods, Function<Object, Object> copyFunc) {
         super();
         this.genFactory = genFactory;
         this.staticFactoryMethods = new ArrayList<>(staticFactoryMethods);
+        this.copyFunc = copyFunc;
         this.staticFactoryMethods.sort(
                 Comparator
                         .comparing((Method m) -> m.getParameters().length));
@@ -38,5 +41,10 @@ public class StaticFactoryMethodsGenerator extends SeriesGen<Object> {
                 }
             });
         });
+    }
+
+    @Override
+    public Object copy(Object obj) {
+        return copyFunc.apply(obj);
     }
 }

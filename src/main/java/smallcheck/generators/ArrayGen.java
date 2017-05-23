@@ -1,6 +1,7 @@
 package smallcheck.generators;
 
 import java.lang.reflect.Array;
+import java.util.Arrays;
 import java.util.stream.Stream;
 
 /**
@@ -35,6 +36,14 @@ public class ArrayGen<T> extends SeriesGen<T[]> {
                     })
             );
         });
+    }
 
+    @Override
+    public T[] copy(T[] obj) {
+        T[] res = Arrays.copyOf(obj, obj.length);
+        for (int i = 0; i < res.length; i++) {
+            res[i] = elementGen.copy(res[i]);
+        }
+        return res;
     }
 }

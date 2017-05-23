@@ -4,6 +4,7 @@ import smallcheck.annotations.From;
 
 import java.lang.reflect.*;
 import java.util.*;
+import java.util.function.Function;
 
 /**
  *
@@ -11,7 +12,18 @@ import java.util.*;
 public class GenFactory {
 
     private Map<Type, SeriesGen<?>> typeGenerators = initDefaultGenerators();
-    private List<Class<?>> staticFactories = new ArrayList<>();
+    private List<StaticFactory> staticFactories = new ArrayList<>();
+
+
+    private static class StaticFactory {
+        Class<?> clazz;
+        Function<Object,Object> copyMethod;
+
+        public StaticFactory(Class<?> clazz, Function<Object, Object> copyMethod) {
+            this.clazz = clazz;
+            this.copyMethod = copyMethod;
+        }
+    }
 
 
     private Map<Type, SeriesGen<?>> initDefaultGenerators() {
@@ -78,17 +90,21 @@ public class GenFactory {
         if (type instanceof Class<?>) {
             Class<?> clazz = (Class<?>) type;
 
+
+
             // try to find static factory methods
             List<Method> staticFactoryMethods = new ArrayList<>();
-            for (Class<?> staticFactory : staticFactories) {
-                for (Method method : staticFactory.getMethods()) {
+            Function<Object, Object> copyFunc = null;
+            for (StaticFactory staticFactory : staticFactories) {
+                for (Method method : staticFactory.clazz.getMethods()) {
                     if (clazz.isAssignableFrom(method.getReturnType())) {
                         staticFactoryMethods.add(method);
+                        copyFunc = staticFactory.copyMethod;
                     }
                 }
             }
             if (!staticFactoryMethods.isEmpty()) {
-                SeriesGen<?> gen = new StaticFactoryMethodsGenerator(this, staticFactoryMethods);
+                SeriesGen<?> gen = new StaticFactoryMethodsGenerator(this, staticFactoryMethods, copyFunc);
                 typeGenerators.put(clazz, gen);
                 return gen;
             }
@@ -112,7 +128,15 @@ public class GenFactory {
 
     }
 
-    public void addStaticFactory(Class<?> clazz) {
-        staticFactories.add(clazz);
+    public void addStaticFactory(Class<?> clazz, Function<Object, Object> copyFunc) {
+        staticFactories.add(new StaticFactory(clazz, copyFunc));
+    }
+
+    public void addStaticFactory(Class<?> clazz, Class<? extends Function<Object, Object>> copyFunc) {
+        try {
+            addStaticFactory(clazz, copyFunc.newInstance());
+        } catch (InstantiationException | IllegalAccessException e) {
+            throw new RuntimeException(e);
+        }
     }
 }

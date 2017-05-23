@@ -4,6 +4,7 @@ import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
@@ -28,10 +29,19 @@ public class ListGen<T> extends SeriesGen<List<T>> {
                     elementGen.generate(depth - 1).map(e -> {
                         List<T> res = new ArrayList<>(depth);
                         res.add(e);
-                        res.addAll(l);
+                        for (T t : l) {
+                            res.add(elementGen.copy(t));
+                        }
                         return res;
                     })
             );
         });
+    }
+
+    @Override
+    public List<T> copy(List<T> obj) {
+        return obj.stream()
+                .map(elementGen::copy)
+                .collect(Collectors.toList());
     }
 }

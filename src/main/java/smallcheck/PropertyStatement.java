@@ -35,10 +35,11 @@ public class PropertyStatement extends Statement {
         for (Annotation annotation : method.getAnnotations()) {
             if (annotation instanceof StaticFactories) {
                 for (StaticFactory staticFactory : ((StaticFactories) annotation).value()) {
-                    genFactory.addStaticFactory(staticFactory.value());
+                    genFactory.addStaticFactory(staticFactory.value(), staticFactory.copyFunc());
                 }
             } else if (annotation instanceof StaticFactory) {
-                genFactory.addStaticFactory(((StaticFactory) annotation).value());
+                StaticFactory staticFactory = (StaticFactory) annotation;
+                genFactory.addStaticFactory(staticFactory.value(), staticFactory.copyFunc());
             }
         }
 

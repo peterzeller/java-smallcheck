@@ -28,12 +28,23 @@ public class MapGen<K, V> extends SeriesGen<Map<K, V>> {
                     keyGen.generate(depth - 1).flatMap(k -> {
                         return valueGen.generate(depth - 1).map(v -> {
                             Map<K, V> res = new HashMap<>();
-                            res.put(k, v);
-                            res.putAll(m);
+                            res.put(keyGen.copy(k), v);
+                            for (Map.Entry<K, V> e : m.entrySet()) {
+                                res.put(keyGen.copy(e.getKey()), valueGen.copy(e.getValue()));
+                            }
                             return res;
                         });
                     })
             );
         });
+    }
+
+    @Override
+    public Map<K, V> copy(Map<K, V> obj) {
+        Map<K, V> res = new HashMap<>();
+        for (Map.Entry<K, V> e : obj.entrySet()) {
+            res.put(keyGen.copy(e.getKey()), valueGen.copy(e.getValue()));
+        }
+        return res;
     }
 }

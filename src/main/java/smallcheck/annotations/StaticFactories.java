@@ -1,6 +1,7 @@
 package smallcheck.annotations;
 
 import java.lang.annotation.*;
+import java.util.function.Function;
 
 /**
  *
@@ -10,4 +11,5 @@ import java.lang.annotation.*;
 public @interface StaticFactories {
 
     StaticFactory[] value();
+
 }
