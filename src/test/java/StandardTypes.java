@@ -3,7 +3,9 @@
  */
 
 import org.junit.Assume;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.Timeout;
 import org.junit.runner.RunWith;
 import smallcheck.annotations.Property;
 import smallcheck.SmallCheckRunner;
@@ -19,6 +21,9 @@ import static org.junit.Assert.*;
 
 @RunWith(SmallCheckRunner.class)
 public class StandardTypes {
+
+    @Rule
+    public Timeout globalTimeout = Timeout.seconds(1);
 
     @Test
     public void blub() {

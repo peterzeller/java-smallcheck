@@ -1,10 +1,31 @@
 group 'com.github.peterzeller'
-version '0.0.3'
+version '0.0.4'
 
 // Apply the java-library plugin to add support for Java Library
 apply plugin: 'java-library'
 apply plugin: 'maven'
 apply plugin: 'signing'
+
+compileJava {
+    sourceCompatibility = 1.8
+    targetCompatibility = 1.8
+}
+
+buildscript {
+    repositories {
+        jcenter()
+    }
+
+    dependencies {
+        classpath 'eu.appsatori:gradle-fatjar-plugin:0.3'
+    }
+}
+
+apply plugin: 'eu.appsatori.fatjar'
+
+fatJar {
+    exclude 'META-INF/*.DSA'
+}
 
 // In this section you declare where to find the dependencies of your project
 repositories {
@@ -18,7 +39,7 @@ dependencies {
 //    api 'org.apache.commons:commons-math3:3.6.1'
 
     // This dependency is used internally, and not exposed to consumers on their own compile classpath.
-    implementation 'com.google.guava:guava:21.0'
+    compile 'com.google.guava:guava:21.0'
 
     // Use JUnit test framework
     api 'junit:junit:4.12'

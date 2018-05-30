@@ -1,16 +1,18 @@
 package smallcheck;
 
 import org.junit.Test;
+import org.junit.internal.runners.model.ReflectiveCallable;
+import org.junit.internal.runners.statements.Fail;
+import org.junit.internal.runners.statements.InvokeMethod;
 import org.junit.runners.BlockJUnit4ClassRunner;
-import org.junit.runners.model.InitializationError;
-
-import java.util.List;
-import java.util.ArrayList;
-
 import org.junit.runners.model.FrameworkMethod;
+import org.junit.runners.model.InitializationError;
 import org.junit.runners.model.Statement;
 import org.junit.runners.model.TestClass;
 import smallcheck.annotations.Property;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  *
@@ -47,11 +49,11 @@ public class SmallCheckRunner extends BlockJUnit4ClassRunner {
     }
 
     @Override
-    public Statement methodBlock(FrameworkMethod method) {
-        if (method.getAnnotation(Test.class) != null) {
-            return super.methodBlock(method);
-        }
+    protected Statement methodInvoker(FrameworkMethod method, Object test) {
         Property property = method.getAnnotation(Property.class);
+        if (property == null) {
+            return super.methodInvoker(method, test);
+        }
         return new PropertyStatement(property, method, getTestClass());
     }
 
