@@ -87,10 +87,10 @@ def isReleaseBuild() {
     return version.contains("SNAPSHOT") == false
 }
 
-signing {
-    required { isReleaseBuild() && gradle.taskGraph.hasTask("uploadArchives") }
-    sign configurations.archives
-}
+// signing {
+//     required { isReleaseBuild() && gradle.taskGraph.hasTask("uploadArchives") }
+//     sign configurations.archives
+// }
 
 uploadArchives {
     repositories {
