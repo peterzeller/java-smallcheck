@@ -5,6 +5,7 @@ version '0.0.4'
 apply plugin: 'java-library'
 apply plugin: 'maven'
 apply plugin: 'signing'
+apply plugin: 'com.bmuschko.nexus'
 
 compileJava {
     sourceCompatibility = 1.8
@@ -18,6 +19,7 @@ buildscript {
 
     dependencies {
         classpath 'eu.appsatori:gradle-fatjar-plugin:0.3'
+        classpath 'com.bmuschko:gradle-nexus-plugin:2.3.1'
     }
 }
 
@@ -68,70 +70,32 @@ dependencies {
  *
  */
 
+modifyPom {
+    project {
+        name 'Java SmallCheck'
+        packaging 'jar'
+        // optionally artifactId can be defined here
+        description 'An implementation of SmallCheck for Java as a JUnit extension.'
+        url 'http://www.example.com/example-application'
 
-task javadocJar(type: Jar) {
-    classifier = 'javadoc'
-    from javadoc
-}
+        scm {
+            connection 'scm:https://github.com/peterzeller/java-smallcheck'
+            developerConnection 'scm:https://github.com/peterzeller/java-smallcheck'
+            url 'https://github.com/peterzeller/java-smallcheck'
+        }
 
-task sourcesJar(type: Jar) {
-    classifier = 'sources'
-    from sourceSets.main.allSource
-}
-
-artifacts {
-    archives javadocJar, sourcesJar
-}
-
-def isReleaseBuild() {
-    return version.contains("SNAPSHOT") == false
-}
-
-// signing {
-//     required { isReleaseBuild() && gradle.taskGraph.hasTask("uploadArchives") }
-//     sign configurations.archives
-// }
-
-uploadArchives {
-    repositories {
-        mavenDeployer {
-            beforeDeployment { MavenDeployment deployment -> signing.signPom(deployment) }
-
-            repository(url: "https://oss.sonatype.org/service/local/staging/deploy/maven2/") {
-                authentication(userName: ossrhUsername, password: ossrhPassword)
+        licenses {
+            license {
+                name 'The Apache License, Version 2.0'
+                url 'http://www.apache.org/licenses/LICENSE-2.0.txt'
             }
+        }
 
-            snapshotRepository(url: "https://oss.sonatype.org/content/repositories/snapshots/") {
-                authentication(userName: ossrhUsername, password: ossrhPassword)
-            }
-
-            pom.project {
-                name 'Java SmallCheck'
-                packaging 'jar'
-                // optionally artifactId can be defined here
-                description 'An implementation of SmallCheck for Java as a JUnit extension.'
-                url 'http://www.example.com/example-application'
-
-                scm {
-                    connection 'scm:https://github.com/peterzeller/java-smallcheck'
-                    developerConnection 'scm:https://github.com/peterzeller/java-smallcheck'
-                    url 'https://github.com/peterzeller/java-smallcheck'
-                }
-
-                licenses {
-                    license {
-                        name 'The Apache License, Version 2.0'
-                        url 'http://www.apache.org/licenses/LICENSE-2.0.txt'
-                    }
-                }
-
-                developers {
-                    developer {
-                        id 'pzeller'
-                        name 'Peter Zeller'
-                        email 'p_zeller@cs.uni-kl.de'
-                    }
-                }
+        developers {
+            developer {
+                id 'pzeller'
+                name 'Peter Zeller'
+                email 'p_zeller@cs.uni-kl.de'
             }
         }
     }
