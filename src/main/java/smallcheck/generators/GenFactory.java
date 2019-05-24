@@ -40,6 +40,12 @@ public class GenFactory {
         res.put(Character.class, new CharGen());
         res.put(short.class, new ShortGen());
         res.put(Short.class, new ShortGen());
+        res.put(boolean[].class, ArrayGenG.booleanArray(new BoolGen()));
+        res.put(byte[].class, ArrayGenG.byteArray(new ByteGen()));
+        res.put(int[].class, ArrayGenG.intArray(new IntegerGen()));
+        res.put(long[].class, ArrayGenG.longArray(new LongGen()));
+        res.put(char[].class, ArrayGenG.charArray(new CharGen()));
+        res.put(short[].class, ArrayGenG.shortArray(new ShortGen()));
         return res;
     }
 

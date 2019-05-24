@@ -10,10 +10,7 @@ import org.junit.runner.RunWith;
 import smallcheck.annotations.Property;
 import smallcheck.SmallCheckRunner;
 
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.StreamSupport;
 
 import static org.junit.Assert.*;
@@ -106,6 +103,13 @@ public class StandardTypes {
     @Property
     public void testEnum(Set<X> s) {
         assertTrue(s.size() < 3);
+    }
+
+    @Property
+    public void testIntArray(int[] ar) {
+        for (int i = 0; i < ar.length-1; i++) {
+            assertTrue(ar[i] <= ar[i+1]);
+        }
     }
 
 
