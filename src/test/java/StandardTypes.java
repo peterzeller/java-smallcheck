@@ -3,24 +3,22 @@
  */
 
 import org.junit.Assume;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.Timeout;
 import org.junit.runner.RunWith;
-import smallcheck.annotations.Property;
 import smallcheck.SmallCheckRunner;
+import smallcheck.annotations.Property;
 
-import java.util.*;
-import java.util.stream.StreamSupport;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 
 @RunWith(SmallCheckRunner.class)
 public class StandardTypes {
-
-    @Rule
-    public Timeout globalTimeout = Timeout.seconds(1);
 
     @Test
     public void blub() {
@@ -91,13 +89,8 @@ public class StandardTypes {
 
     @Property
     public void testAssume2(List<String> x) {
-        System.out.println(x);
         Assume.assumeTrue(x.size() > 4);
         assertEquals(1, 2);
-    }
-
-    enum X {
-        A, B, C
     }
 
     @Property
@@ -105,11 +98,34 @@ public class StandardTypes {
         assertTrue(s.size() < 3);
     }
 
-    @Property
+    @Property(timeout = 5)
     public void testIntArray(int[] ar) {
-        for (int i = 0; i < ar.length-1; i++) {
-            assertTrue(ar[i] <= ar[i+1]);
+        for (int i = 0; i < ar.length - 1; i++) {
+            assertTrue(ar[i] <= ar[i + 1]);
         }
+    }
+
+    @Property(timeout = 5)
+    public void testIntArrayException(int[] ar) {
+        for (int i = 0; i < ar.length; i++) {
+            assertTrue(ar[i] <= ar[i + 1]);
+        }
+    }
+
+    @Property(timeout = 5)
+    public void testIntArrayInfiniteLoop(int[] ar) {
+        int sum = 0;
+        for (int i : ar) {
+            sum += i;
+        }
+        if (sum + ar.length > 6) {
+            while (true) {
+            }
+        }
+    }
+
+    enum X {
+        A, B, C
     }
 
 

@@ -12,11 +12,12 @@ import smallcheck.generators.GenFactory;
 import smallcheck.generators.ParamGen;
 
 import java.lang.annotation.Annotation;
-import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
 
 /**
@@ -56,29 +57,27 @@ public class PropertyStatement extends Statement {
         Parameter[] parameters = m.getParameters();
         AtomicLong invocations = new AtomicLong(0);
         AtomicLong preConditionFailures = new AtomicLong(0);
+        AtomicReference<Object[]> lastArgs = new AtomicReference<>();
         try {
             int maxDepth = property.maxDepth();
             int maxInvocations = property.maxInvocations();
-            for (int depth = 0; depth <= maxDepth; depth++) {
-                Stream<Object[]> argStream = ParamGen.generate(genFactory, parameters, depth);
-                argStream.forEach(args -> {
-                    try {
-                        if (invocations.incrementAndGet() > maxInvocations) {
-                            throw new MaxInvocationsReached();
-                        }
-                        m.invoke(testInstance, args);
-                    } catch (IllegalAccessException e) {
-                        throw new RuntimeException(e);
-                    } catch (InvocationTargetException e) {
-                        Throwable cause = e.getCause();
-                        if (cause instanceof AssumptionViolatedException) {
-                            preConditionFailures.incrementAndGet();
-                            // ignore this case
-                            return;
-                        }
-                        throw new SmallcheckException(m, args, cause);
-                    }
-                });
+            int timeout = property.timeout();
+            if (timeout < 0) {
+                execute(m, parameters, invocations, preConditionFailures, maxDepth, maxInvocations, lastArgs);
+            } else {
+                ExecutorService executor = Executors.newSingleThreadExecutor();
+                Future f = executor.submit(() -> execute(m, parameters, invocations, preConditionFailures, maxDepth, maxInvocations, lastArgs));
+                executor.shutdown();
+                try {
+                    f.get(timeout, TimeUnit.SECONDS);
+                } catch (ExecutionException e) {
+                    throw e.getCause();
+                } catch (TimeoutException e) {
+                    throw new SmallcheckException(m, lastArgs.get(),
+                            new Exception("Test timed out after " + timeout + " seconds.", e));
+                } catch (Exception e) {
+                    throw new SmallcheckException(m, lastArgs.get(), e);
+                }
             }
         } catch (SmallcheckException e) {
             throw e.skipInternals();
@@ -91,6 +90,31 @@ public class PropertyStatement extends Statement {
             Assert.fail("Did not find enough examples, only " + successfulInvocations + "/" + invocs + " inputs met the precondition.");
         }
 //        System.out.println("execute " + this.method + " in " + testClass);
+    }
+
+    private void execute(Method m, Parameter[] parameters, AtomicLong invocations, AtomicLong preConditionFailures, int maxDepth, int maxInvocations, AtomicReference<Object[]> lastArgs) {
+        for (int depth = 0; depth <= maxDepth; depth++) {
+            Stream<Object[]> argStream = ParamGen.generate(genFactory, parameters, depth);
+            argStream.forEach(args -> {
+                lastArgs.set(args);
+                try {
+                    if (invocations.incrementAndGet() > maxInvocations) {
+                        throw new MaxInvocationsReached();
+                    }
+                    m.invoke(testInstance, args);
+                } catch (IllegalAccessException e) {
+                    throw new RuntimeException(e);
+                } catch (InvocationTargetException e) {
+                    Throwable cause = e.getCause();
+                    if (cause instanceof AssumptionViolatedException) {
+                        preConditionFailures.incrementAndGet();
+                        // ignore this case
+                        return;
+                    }
+                    throw new SmallcheckException(m, args, cause);
+                }
+            });
+        }
     }
 
     private class MaxInvocationsReached extends RuntimeException {
