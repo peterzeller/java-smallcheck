@@ -32,6 +32,17 @@ public class StandardTypes {
 
 
     @Property
+    public void generate(int x, char c) {
+        System.out.println(x + ", " + c);
+    }
+
+    @Property(maxDepth = 6, maxInvocations = 1000, minExamples = 100, timeout = 30)
+    public void configuredExample(int x, char c) {
+        System.out.println(x + ", " + c);
+    }
+
+
+    @Property
     public void testArray(Integer[] ar) {
         int sum = 0;
         for (int i : ar) {

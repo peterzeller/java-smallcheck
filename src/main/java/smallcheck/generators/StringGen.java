@@ -7,16 +7,22 @@ import java.util.stream.Stream;
  */
 public class StringGen extends SeriesGen<String> {
 
-    private ArrayGen<Character> arrayGen = new ArrayGen<>(Character.class, new CharGen());
+    private final ArrayGenG<Character, char[]> arrayGen;
+
+    public StringGen() {
+        this(new CharGen());
+    }
+
+    public StringGen(ArrayGenG<Character, char[]> arrayGen) {
+        this.arrayGen = arrayGen;
+    }
+
+    public StringGen(SeriesGen<Character> charGen) {
+        this.arrayGen =  ArrayGenG.charArray(charGen);
+    }
 
     @Override
     public Stream<String> generate(int depth) {
-        return arrayGen.generate(depth).map(ar -> {
-            char[] chars = new char[ar.length];
-            for (int i = 0; i < chars.length; i++) {
-                chars[i] = ar[i];
-            }
-            return new String(chars);
-        });
+        return arrayGen.generate(depth).map(String::new);
     }
 }

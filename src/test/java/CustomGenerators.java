@@ -4,6 +4,7 @@
 
 import org.junit.runner.RunWith;
 import smallcheck.SmallCheckRunner;
+import smallcheck.annotations.RegisterGenerator;
 import smallcheck.annotations.StaticFactory;
 import smallcheck.annotations.From;
 import smallcheck.annotations.Property;
@@ -11,6 +12,8 @@ import smallcheck.generators.LongGen;
 import smallcheck.generators.SeriesGen;
 
 import java.math.BigInteger;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -43,7 +46,7 @@ public class CustomGenerators {
 
 
     public static class ExprFactory {
-        public static Number number(@From(CustomNumberGen.class) int i) {
+        public static Number number(int i) {
             return new Number(i);
         }
 
@@ -110,7 +113,7 @@ public class CustomGenerators {
 
         @Override
         int evaluate() {
-            return left.evaluate() + right.evaluate();
+            return left.evaluate() * right.evaluate();
         }
 
         @Override
@@ -123,7 +126,38 @@ public class CustomGenerators {
     public static class CustomNumberGen extends SeriesGen<Integer> {
         @Override
         public Stream<Integer> generate(int depth) {
-            return IntStream.range(0, 2+depth).map(i -> 2*i).boxed();
+            return IntStream.range(0, 1 + depth).map(i -> 2 * i).boxed();
         }
+    }
+
+    public static class CustomCharGen extends SeriesGen<Character> {
+        @Override
+        public Stream<Character> generate(int depth) {
+            return IntStream.range(0, 1+depth).mapToObj((int i) -> {
+                if (i % 2 == 0) {
+                    return (char) ('a' + i / 2);
+                } else {
+                    return (char) ('A' + i / 2);
+                }
+            });
+        }
+    }
+
+    @Property(maxDepth = 4)
+    @RegisterGenerator(CustomNumberGen.class)
+    public void genList(List<Integer> list) {
+        System.out.println(list);
+    }
+
+    @Property(maxDepth = 4)
+    public void genList2(List<@From(CustomNumberGen.class) Integer> list) {
+        System.out.println(list);
+    }
+
+    @Property(maxDepth = 4)
+    @RegisterGenerator(CustomNumberGen.class)
+    @RegisterGenerator(CustomCharGen.class)
+    public void genMap(Map<Integer, Character> m) {
+        System.out.println(m);
     }
 }

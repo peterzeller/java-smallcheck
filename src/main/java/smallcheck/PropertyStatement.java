@@ -5,11 +5,8 @@ import org.junit.AssumptionViolatedException;
 import org.junit.runners.model.FrameworkMethod;
 import org.junit.runners.model.Statement;
 import org.junit.runners.model.TestClass;
-import smallcheck.annotations.Property;
-import smallcheck.annotations.StaticFactories;
-import smallcheck.annotations.StaticFactory;
-import smallcheck.generators.GenFactory;
-import smallcheck.generators.ParamGen;
+import smallcheck.annotations.*;
+import smallcheck.generators.*;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationTargetException;
@@ -28,6 +25,8 @@ public class PropertyStatement extends Statement {
     private final FrameworkMethod method;
     private final GenFactory genFactory;
     private final Object testInstance;
+    private static ThreadLocal<GenFactory> localGenFactory = new ThreadLocal<>();
+    private static ThreadLocal<Integer> localDepth = new ThreadLocal<>();
 
     public PropertyStatement(Property property, FrameworkMethod method, TestClass testClass) {
         this.property = property;
@@ -41,6 +40,13 @@ public class PropertyStatement extends Statement {
             } else if (annotation instanceof StaticFactory) {
                 StaticFactory staticFactory = (StaticFactory) annotation;
                 genFactory.addStaticFactory(staticFactory.value(), staticFactory.copyFunc());
+            } else if (annotation instanceof RegisterGenerators) {
+                for (RegisterGenerator registerGenerator : ((RegisterGenerators) annotation).value()) {
+                    genFactory.registerGenerator(registerGenerator.value());
+                }
+            } else if (annotation instanceof RegisterGenerator) {
+                RegisterGenerator registerGenerator = (RegisterGenerator) annotation;
+                genFactory.registerGenerator(registerGenerator.value());
             }
         }
 
@@ -93,28 +99,69 @@ public class PropertyStatement extends Statement {
     }
 
     private void execute(Method m, Parameter[] parameters, AtomicLong invocations, AtomicLong preConditionFailures, int maxDepth, int maxInvocations, AtomicReference<Object[]> lastArgs) {
+        localGenFactory.set(genFactory);
         for (int depth = 0; depth <= maxDepth; depth++) {
+            localDepth.set(depth);
             Stream<Object[]> argStream = ParamGen.generate(genFactory, parameters, depth);
             argStream.forEach(args -> {
                 lastArgs.set(args);
-                try {
-                    if (invocations.incrementAndGet() > maxInvocations) {
-                        throw new MaxInvocationsReached();
+
+                StateGen stateGen = null;
+                for (Object arg : args) {
+                    if (arg instanceof StateGen) {
+                        if (stateGen != null) {
+                            throw new IllegalArgumentException("Only one StateGen argument is allowed.");
+                        }
+                        stateGen = (StateGen) arg;
                     }
-                    m.invoke(testInstance, args);
-                } catch (IllegalAccessException e) {
-                    throw new RuntimeException(e);
-                } catch (InvocationTargetException e) {
-                    Throwable cause = e.getCause();
-                    if (cause instanceof AssumptionViolatedException) {
-                        preConditionFailures.incrementAndGet();
-                        // ignore this case
-                        return;
+                }
+
+                while (true) {
+                    try {
+                        if (invocations.incrementAndGet() > maxInvocations) {
+                            throw new MaxInvocationsReached();
+                        }
+                        m.invoke(testInstance, args);
+                        if (stateGen == null) {
+                            return;
+                        } else {
+                            stateGen.restart();
+                        }
+                    } catch (IllegalAccessException e) {
+                        throw new RuntimeException(e);
+                    } catch (InvocationTargetException e) {
+                        Throwable cause = e.getCause();
+                        if (cause instanceof AssumptionViolatedException) {
+                            preConditionFailures.incrementAndGet();
+                            if (stateGen == null) {
+                                // ignore this case
+                                return;
+                            } else {
+                                stateGen.restart();
+                            }
+                        } else if (cause instanceof RestartException) {
+                            RestartException restartException = (RestartException) cause;
+                            if (stateGen == null || restartException.getStackDepth() == 0) {
+                                // completed all invocations
+                                return;
+                            } else {
+                                stateGen.restart(restartException.getStackDepth() - 1);
+                            }
+                        } else {
+                            throw new SmallcheckException(m, args, cause);
+                        }
                     }
-                    throw new SmallcheckException(m, args, cause);
                 }
             });
         }
+    }
+
+    public static GenFactory getLocalGenFactory() {
+        return localGenFactory.get();
+    }
+
+    public static int getLocalDepth() {
+        return localDepth.get();
     }
 
     private class MaxInvocationsReached extends RuntimeException {

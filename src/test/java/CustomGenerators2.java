@@ -131,7 +131,7 @@ public class CustomGenerators2 {
 
         @Override
         int evaluate() {
-            return left.evaluate() + right.evaluate();
+            return left.evaluate() * right.evaluate();
         }
 
         @Override
